@@ -1,6 +1,7 @@
 import streamlit as st
 import torch
 from transformers import pipeline
+from transformers import AutoTokenizer
 
 #KONFIGURASI HALAMAN
 st.set_page_config(
@@ -12,11 +13,10 @@ st.set_page_config(
 #MEMUAT MODEL
 @st.cache_resource
 def load_summarizer():
-    """
-    Memuat pipeline summarization dari Hugging Face Hub.
-    Fungsi ini akan di-cache, jadi model hanya diunduh sekali.
-    """
     repo_id = "Irvan14/t5-small-indonesian-summarization" 
+     return AutoTokenizer.from_pretrained(repo_id)
+
+tokenizer = load_tokenizer()
     
     print(f"--- Mengunduh dan memuat model dari Hub: {repo_id}... ---")
     try:
@@ -76,7 +76,10 @@ if submit_button and summarizer:
     else:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
-                context_to_summarize = article_text[:2000]
+                max_input_tokens = 512
+                input_tokens = tokenizer.encode(article_text, truncation=True, max_length=max_input_tokens)
+                context_to_summarize = tokenizer.decode(input_tokens, skip_special_tokens=True)
+
                 prompt_text = f"Buatkan Ringkasan untuk artikel berikut: {context_to_summarize}"
 
                 result = summarizer(
