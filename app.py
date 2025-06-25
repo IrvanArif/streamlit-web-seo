@@ -77,7 +77,7 @@ if submit_button and summarizer:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
                 context_to_summarize = article_text[:2000]
-                prompt_text = f"Ringkas teks ini: {context_to_summarize}"
+                prompt_text = f"Buatkan Ringkasan untuk artikel berikut: {context_to_summarize}"
 
                 result = summarizer(
                     prompt_text,
