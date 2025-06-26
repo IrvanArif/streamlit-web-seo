@@ -58,7 +58,7 @@ with col2:
     if output_text_value:
         st.info(output_text_value)
     else:
-        st.info("Deskripsi meta Anda akan muncul di sini...")
+        st.info("")
 
     
     char_count = len(output_text_value)
