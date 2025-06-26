@@ -76,7 +76,7 @@ if submit_button and tokenizer and model:
                 # 3. Generate dengan parameter yang terbukti menghasilkan ringkasan bagus
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=80,
+                    max_length=70,
                     min_length=30,
                     num_beams=5,
                     repetition_penalty=2.5,
@@ -97,9 +97,9 @@ if submit_button and tokenizer and model:
                     last_space_index = truncated_text.rfind(' ')
                     
                     if last_space_index != -1:
-                        final_text = truncated_text[:last_space_index] + "..."
+                        final_text = truncated_text[:last_space_index] + "."
                     else:
-                        final_text = truncated_text + "..."
+                        final_text = truncated_text + "."
 
                 # 6. Simpan hasil ke state dan refresh
                 st.session_state.summary_result = final_text
