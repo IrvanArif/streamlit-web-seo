@@ -4,14 +4,6 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 import re
 import nltk
 
-# --- Download data NLTK (hanya sekali saat setup) ---
-# Ini penting untuk pemecahan kalimat
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError: # <--- INI PERBAIKANNYA
-    print("Downloading 'punkt' for NLTK, this happens once per container boot.")
-    nltk.download('punkt')
-
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
     page_title="Peringkas Meta SEO",
