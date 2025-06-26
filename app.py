@@ -79,10 +79,13 @@ if submit_button and summarizer:
                 context_to_summarize = article_text[:2000]
                 
                 result = summarizer(
-                    context_to_summarize,
-                    max_new_tokens=60,
-                    min_new_tokens=25,
-                    do_sample=False
+                    context_to_summarize, 
+                    max_new_tokens=60,      # Batas maksimal token/kata
+                    min_new_tokens=25,      # Batas minimal token/kata
+                    do_sample=True,         # Mengaktifkan metode sampling, agar tidak kaku
+                    temperature=1.2,        # Membuat hasil lebih "kreatif" (nilai > 1.0)
+                    top_k=50,               # Membatasi pilihan kata pada 50 kata paling mungkin
+                    top_p=0.95              # Membatasi pilihan kata berdasarkan probabilitas
                 )
                 raw_summary = result[0]['summary_text']
 
