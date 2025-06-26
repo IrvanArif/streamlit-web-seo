@@ -95,7 +95,7 @@ if submit_button and tokenizer and model:
                 target_length = 150
                 final_text = raw_summary
                 if len(final_text) > target_length:
-                    truncated_text = final_text[:target_length]
+                   truncated_text = final_text[:target_length]
                    # Cari spasi terakhir untuk pemotongan yang rapi
                    last_space_index = truncated_text.rfind(' ')
                    if last_space != -1:
