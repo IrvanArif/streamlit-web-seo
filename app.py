@@ -83,18 +83,29 @@ if submit_button and tokenizer and model:
                 # 3. Generate: Gunakan parameter yang memaksa model lebih kreatif
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=80,
-                    min_length=30,
+                    max_length=60,
+                    min_length=25,
                     num_beams=5,          # Meningkatkan pencarian menjadi 5
                     repetition_penalty=2.5, # Penalti kuat untuk kata yg berulang
                     length_penalty=1.5,   # Mendorong kalimat yg lebih panjang
                     early_stopping=True,
                     no_repeat_ngram_size=2 # Mencegah pengulangan frasa 2 kata
                 )
-                
                 # 4. Decode: Ubah angka kembali menjadi teks
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-                
+                # 5. Jaring Pengaman: Potong paksa jika masih melebihi 150 karakter
+                target_length = 150
+                final_text = raw_summary
+                if len(raw_summary) > target_length:
+                   # Potong di 150 karakter
+                   truncated_summary = raw_summary[:target_length]
+                   # Cari spasi terakhir untuk pemotongan yang rapi
+                  last_space = truncated_summary.rfind(' ')
+                if last_space != -1:
+                      final_text = truncated_summary[:last_space] + "."
+                  else:
+                      final_text = truncated_summary + "."
+                      
                 st.session_state.summary_result = raw_summary
                 st.rerun()
 
