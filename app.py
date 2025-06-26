@@ -1,46 +1,44 @@
 import streamlit as st
 import torch
-from transformers import pipeline
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 
-#KONFIGURASI HALAMAN
+# --- KONFIGURASI HALAMAN ---
 st.set_page_config(
     page_title="Peringkas Meta SEO",
     page_icon="🔎",
     layout="wide"
 )
 
-#MEMUAT MODEL
+# --- FUNGSI UNTUK MEMUAT MODEL & TOKENIZER ANDA ---
 @st.cache_resource
-def load_summarizer():
+def load_components():
     """
-    Memuat pipeline summarization dari Hugging Face Hub.
-    Fungsi ini akan di-cache, jadi model hanya diunduh sekali.
+    Memuat tokenizer dan model 'Irvan14/t5-small-indonesian-summarization'
+    secara manual untuk kontrol penuh.
     """
-    repo_id = "Irvan14/t5-small-indonesian-summarization" 
-    
-    print(f"--- Mengunduh dan memuat model dari Hub: {repo_id}... ---")
+    # Menggunakan model yang Anda tentukan
+    repo_id = "Irvan14/t5-small-indonesian-summarization"
     try:
-        device = 0 if torch.cuda.is_available() else -1
-        summarizer = pipeline(
-            "summarization",
-            model=repo_id,
-            tokenizer=repo_id,
-            device=device
-        )
-        print(f"--- Model berhasil dimuat di device: {'GPU' if device == 0 else 'CPU'} ---")
-        return summarizer
+        print(f"--- Memuat Tokenizer dari Hub: {repo_id}... ---")
+        tokenizer = T5Tokenizer.from_pretrained(repo_id)
+        
+        print(f"--- Memuat Model dari Hub: {repo_id}... ---")
+        model = T5ForConditionalGeneration.from_pretrained(repo_id)
+        
+        print("--- Komponen berhasil dimuat. ---")
+        return tokenizer, model
     except Exception as e:
-        st.error(f"Gagal memuat model dari Hub. Error: {e}")
-        return None
+        st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
+        return None, None
 
-#untuk memuat model
-summarizer = load_summarizer()
+# --- MEMUAT KOMPONEN SAAT APLIKASI DIMULAI ---
+tokenizer, model = load_components()
 
-# Inisialisasi State di Awal
+# --- INISIALISASI STATE UNTUK MENYIMPAN HASIL ---
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
 
-#TAMPILAN
+# --- ANTARMUKA PENGGUNA (UI) ---
 col1, col2 = st.columns(2)
 
 with col1:
@@ -52,14 +50,12 @@ with col1:
 
 with col2:
     st.subheader("Deskripsi Meta SEO")
-    
     output_text_value = st.session_state.summary_result
     
     if output_text_value:
         st.info(output_text_value)
     else:
-        st.info("")
-
+        st.info("Deskripsi meta Anda akan muncul di sini...")
     
     char_count = len(output_text_value)
     st.caption(f"{char_count}/150 karakter. Ideal: 130-150.")
@@ -69,36 +65,37 @@ with col2:
         st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
         st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
 
-#LOGIKAnya
-if submit_button and summarizer:
-    if not article_text or len(article_text) < 200:
-        st.warning("Silakan masukkan setidaknya 200 karakter artikel untuk hasil terbaik.")
+# --- LOGIKA UTAMA: PENDEKATAN MANUAL & EKSPLISIT ---
+if submit_button and tokenizer and model:
+    if not article_text or len(article_text) < 150:
+        st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
-                context_to_summarize = article_text[:2000]
-                input_text_with_prefix = "summarize: " + context_to_summarize
+                # 1. Siapkan input. Kita tetap menggunakan prefiks sebagai praktik terbaik.
+                input_text = "summarize: " + article_text
                 
-                result = summarizer(
-                    input_text_with_prefix,
-                    max_new_tokens=60,      # Batas maksimal token/kata
-                    min_new_tokens=20,      # Batas minimal token/kata
-                    do_sample=True,         # Mengaktifkan metode sampling, agar tidak kaku
-                    temperature=1.0,        # Membuat hasil lebih "kreatif" (nilai > 1.0)
-                    top_k=50,               # Membatasi pilihan kata pada 50 kata paling mungkin
-                    top_p=0.95              # Membatasi pilihan kata berdasarkan probabilitas
+                # 2. Tokenisasi: Ubah teks menjadi angka
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
+                model.to(device)
+                
+                # 3. Generate: Gunakan parameter yang memaksa model lebih kreatif
+                summary_ids = model.generate(
+                    inputs['input_ids'],
+                    max_length=80,
+                    min_length=30,
+                    num_beams=5,          # Meningkatkan pencarian menjadi 5
+                    repetition_penalty=2.5, # Penalti kuat untuk kata yg berulang
+                    length_penalty=1.5,   # Mendorong kalimat yg lebih panjang
+                    early_stopping=True,
+                    no_repeat_ngram_size=2 # Mencegah pengulangan frasa 2 kata
                 )
-                raw_summary = result[0]['summary_text']
-
-                target_length = 150
-                final_text = raw_summary
-                if len(raw_summary) > target_length:
-                    truncated_summary = raw_summary[:target_length]
-                    last_space = truncated_summary.rfind(' ')
-                    if last_space != -1:
-                        final_text = truncated_summary[:last_space] + "."
                 
-                st.session_state.summary_result = final_text
+                # 4. Decode: Ubah angka kembali menjadi teks
+                raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                
+                st.session_state.summary_result = raw_summary
                 st.rerun()
 
             except Exception as e:
