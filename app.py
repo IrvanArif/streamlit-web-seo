@@ -8,7 +8,8 @@ import nltk
 # Ini penting untuk pemecahan kalimat
 try:
     nltk.data.find('tokenizers/punkt')
-except nltk.downloader.DownloadError:
+except LookupError: # <--- INI PERBAIKANNYA
+    print("Downloading 'punkt' for NLTK, this happens once per container boot.")
     nltk.download('punkt')
 
 # --- KONFIGURASI HALAMAN ---
