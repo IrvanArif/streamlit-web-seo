@@ -77,13 +77,14 @@ if submit_button and summarizer:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
                 context_to_summarize = article_text[:2000]
+                input_text_with_prefix = "summarize: " + context_to_summarize
                 
                 result = summarizer(
-                    context_to_summarize, 
+                    input_text_with_prefix
                     max_new_tokens=60,      # Batas maksimal token/kata
-                    min_new_tokens=25,      # Batas minimal token/kata
+                    min_new_tokens=20,      # Batas minimal token/kata
                     do_sample=True,         # Mengaktifkan metode sampling, agar tidak kaku
-                    temperature=1.9,        # Membuat hasil lebih "kreatif" (nilai > 1.0)
+                    temperature=1.0,        # Membuat hasil lebih "kreatif" (nilai > 1.0)
                     top_k=50,               # Membatasi pilihan kata pada 50 kata paling mungkin
                     top_p=0.95              # Membatasi pilihan kata berdasarkan probabilitas
                 )
