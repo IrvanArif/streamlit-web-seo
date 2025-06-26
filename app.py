@@ -13,8 +13,7 @@ st.set_page_config(
 #MEMUAT MODEL
 @st.cache_resource
 def load_summarizer():
-    repo_id = "Irvan14/t5-small-indonesian-summarization" 
-     return AutoTokenizer.from_pretrained(repo_id)
+    repo_id = "Irvan14/t5-small-indonesian-summarization"
 
 tokenizer = load_tokenizer()
     
