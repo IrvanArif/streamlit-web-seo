@@ -100,11 +100,11 @@ if submit_button and tokenizer and model:
                    # Potong di 150 karakter
                    truncated_summary = raw_summary[:target_length]
                    # Cari spasi terakhir untuk pemotongan yang rapi
-                  last_space = truncated_summary.rfind(' ')
-                if last_space != -1:
-                      final_text = truncated_summary[:last_space] + "."
-                  else:
-                      final_text = truncated_summary + "."
+                   last_space = truncated_summary.rfind(' ')
+                   if last_space != -1:
+                        final_text = truncated_summary[:last_space] + "."
+                   else:
+                        final_text = truncated_summary + "."
                       
                 st.session_state.summary_result = raw_summary
                 st.rerun()
