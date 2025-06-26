@@ -112,9 +112,9 @@ if submit_button and tokenizer and model:
                     truncated_text = final_text[:target_length]
                     last_space_index = truncated_text.rfind(' ')
                     if last_space_index != -1:
-                        final_text = truncated_text[:last_space_index] + "..."
+                        final_text = truncated_text[:last_space_index] + "."
                     else:
-                        final_text = truncated_text + "..."
+                        final_text = truncated_text + "."
                 
                 st.session_state.summary_result = final_text
                 st.rerun()
