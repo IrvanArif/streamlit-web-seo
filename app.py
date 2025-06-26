@@ -73,13 +73,11 @@ if submit_button and tokenizer and model:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
                 # 1. Siapkan input. Kita tetap menggunakan prefiks sebagai praktik terbaik.
-                input_text = "summarize: " + article_text
-                
+                input_text = "summarize: " + article_text                
                 # 2. Tokenisasi: Ubah teks menjadi angka
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
-                model.to(device)
-                
+                model.to(device)                
                 # 3. Generate: Gunakan parameter yang memaksa model lebih kreatif
                 summary_ids = model.generate(
                     inputs['input_ids'],
@@ -96,15 +94,14 @@ if submit_button and tokenizer and model:
                 # 5. Jaring Pengaman: Potong paksa jika masih melebihi 150 karakter
                 target_length = 150
                 final_text = raw_summary
-                if len(raw_summary) > target_length:
-                   # Potong di 150 karakter
-                   truncated_summary = raw_summary[:target_length]
+                if len(final_text) > target_length:
+                    truncated_text = final_text[:target_length]
                    # Cari spasi terakhir untuk pemotongan yang rapi
-                   last_space = truncated_summary.rfind(' ')
+                   last_space_index = truncated_text.rfind(' ')
                    if last_space != -1:
-                        final_text = truncated_summary[:last_space] + "."
+                        final_text = truncated_text[:last_space_index] + "."
                    else:
-                        final_text = truncated_summary + "."
+                        final_text = truncated_text + "."
                       
                 st.session_state.summary_result = raw_summary
                 st.rerun()
