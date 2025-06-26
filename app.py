@@ -2,6 +2,14 @@ import streamlit as st
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 import re
+import nltk
+
+# --- Download data NLTK (hanya sekali saat setup) ---
+# Ini penting untuk pemecahan kalimat
+try:
+    nltk.data.find('tokenizers/punkt')
+except nltk.downloader.DownloadError:
+    nltk.download('punkt')
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -30,10 +38,12 @@ def extract_keywords(title, text, num_keywords=4):
         'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa',
         'profil', 'lengkap', 'mantan', 'member', 'perjalanan', 'karier', 'kontroversi'
     ])
+
     def preprocess(s):
         s = s.lower()
         s = re.sub(r'[^\w\s]', '', s)
         return [word for word in s.split() if word not in stop_words and len(word) > 3]
+
     title_words = set(preprocess(title))
     body_words = preprocess(text)
     word_freq = {word: body_words.count(word) for word in title_words}
@@ -44,13 +54,7 @@ def extract_keywords(title, text, num_keywords=4):
 # --- MEMUAT KOMPONEN ---
 tokenizer, model = load_components()
 
-# --- INISIALISASI STATE (DITAMBAH UNTUK INPUT) ---
-# Kunci agar input bisa di-reset
-if 'article_title' not in st.session_state:
-    st.session_state.article_title = ""
-if 'article_text' not in st.session_state:
-    st.session_state.article_text = ""
-# State untuk output
+# --- INISIALISASI STATE ---
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
 
@@ -59,20 +63,12 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Masukkan Teks")
-    # Menggunakan 'key' untuk menghubungkan widget dengan session_state
-    st.text_input("Judul Artikel", key="article_title", placeholder="Masukkan judul artikel Anda di sini...")
-    st.text_area("Isi Konten Artikel", key="article_text", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
-    
-    # Membuat 2 kolom untuk tombol Submit dan Reset
-    s_col, r_col = st.columns(2)
-    with s_col:
-        submit_button = st.button("Buat Deskripsi Meta", type="primary", use_container_width=True)
-    with r_col:
-        reset_button = st.button("Reset", use_container_width=True)
+    article_title = st.text_input("Judul Artikel", placeholder="Masukkan judul artikel Anda di sini...")
+    article_text = st.text_area("Isi Konten Artikel", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
+    submit_button = st.button("Buat Deskripsi Meta", type="primary")
 
 with col2:
     st.subheader("Deskripsi Meta SEO")
-    # Membaca output dari session_state
     output_text_value = st.session_state.summary_result
     
     if output_text_value:
@@ -85,31 +81,38 @@ with col2:
 
     st.subheader("Pratinjau SEO")
     with st.container(border=True):
-        # Membaca judul dari session_state untuk pratinjau
-        st.markdown(f"<h5>{st.session_state.article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
+        st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
         st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
 
-# --- LOGIKA TOMBOL ---
-
-# LOGIKA TOMBOL RESET
-if reset_button:
-    st.session_state.article_title = ""
-    st.session_state.article_text = ""
-    st.session_state.summary_result = ""
-    st.rerun()
-
-# LOGIKA TOMBOL SUBMIT
+# --- LOGIKA UTAMA: PENDEKATAN BARU DENGAN KONTEKS KATA KUNCI ---
 if submit_button and tokenizer and model:
-    # Membaca input dari session_state
-    article_title_value = st.session_state.article_title
-    article_text_value = st.session_state.article_text
-
-    if not article_text_value or len(article_text_value) < 150:
+    if not article_text or len(article_text) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
-        with st.spinner("Membuat ringkasan dan menyisipkan kata kunci..."):
+        with st.spinner("Menganalisis kata kunci dan membuat ringkasan alami..."):
             try:
-                input_text = "summarize: " + article_text_value
+                # --- Langkah 1: Ekstrak kata kunci ---
+                keywords = extract_keywords(article_title, article_text)
+                
+                # --- Langkah 2: Buat Konteks Berbasis Kata Kunci ---
+                keyword_context = ""
+                if keywords:
+                    sentences = nltk.sent_tokenize(article_text)
+                    relevant_sentences = []
+                    for sentence in sentences:
+                        # Periksa jika ada kata kunci di dalam kalimat (case-insensitive)
+                        if any(keyword.lower() in sentence.lower() for keyword in keywords):
+                            relevant_sentences.append(sentence)
+                    
+                    # Gabungkan kalimat-kalimat relevan menjadi satu teks
+                    if relevant_sentences:
+                        keyword_context = " ".join(relevant_sentences)
+                
+                # Jika tidak ada konteks kata kunci, gunakan artikel asli
+                source_text_for_summary = keyword_context if keyword_context else article_text
+
+                # --- Langkah 3: Meringkas Konteks Baru ---
+                input_text = "summarize: " + source_text_for_summary
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
                 model.to(device)
@@ -119,15 +122,9 @@ if submit_button and tokenizer and model:
                 )
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-                keywords = extract_keywords(article_title_value, article_text_value)
-                
-                processed_summary = raw_summary
-                if keywords:
-                    keyword_prefix = ", ".join(keywords).capitalize()
-                    processed_summary = f"{keyword_prefix}. {raw_summary}"
-
+                # --- Langkah 4: Potong hasil agar sesuai batas karakter ---
                 target_length = 150
-                final_text = processed_summary
+                final_text = raw_summary
                 if len(final_text) > target_length:
                     truncated_text = final_text[:target_length]
                     last_space_index = truncated_text.rfind(' ')
