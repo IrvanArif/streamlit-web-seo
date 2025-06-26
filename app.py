@@ -77,8 +77,7 @@ if submit_button and summarizer:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
                 context_to_summarize = article_text[:2000]
-                prompt_text = f"Berdasarkan teks berikut, apakah inti sari utamanya yang dapat diringkas menjadi satu paragraf singkat untuk meta deskripsi SEO? Teks: {context_to_summarize}"
-
+                
                 result = summarizer(
                     prompt_text,
                     max_new_tokens=60,
