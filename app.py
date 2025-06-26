@@ -65,45 +65,51 @@ with col2:
         st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
         st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
 
-# --- LOGIKA UTAMA: PENDEKATAN MANUAL & EKSPLISIT ---
+# --- LOGIKA UTAMA: GABUNGAN SEMUA PERBAIKAN ---
 if submit_button and tokenizer and model:
     if not article_text or len(article_text) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
         with st.spinner("Sedang membuat ringkasan..."):
             try:
-                # 1. Siapkan input. Kita tetap menggunakan prefiks sebagai praktik terbaik.
-                input_text = "summarize: " + article_text                
-                # 2. Tokenisasi: Ubah teks menjadi angka
+                # 1. Siapkan input dengan prefix
+                input_text = "summarize: " + article_text
+                
+                # 2. Tokenisasi
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
-                model.to(device)                
-                # 3. Generate: Gunakan parameter yang memaksa model lebih kreatif
+                model.to(device)
+                
+                # 3. Generate dengan parameter yang terbukti menghasilkan ringkasan bagus
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=60,
-                    min_length=25,
-                    num_beams=5,          # Meningkatkan pencarian menjadi 5
-                    repetition_penalty=2.5, # Penalti kuat untuk kata yg berulang
-                    length_penalty=1.5,   # Mendorong kalimat yg lebih panjang
+                    max_length=40,
+                    min_length=20,
+                    num_beams=5,
+                    repetition_penalty=2.5,
+                    length_penalty=1.5,
                     early_stopping=True,
-                    no_repeat_ngram_size=2 # Mencegah pengulangan frasa 2 kata
+                    no_repeat_ngram_size=2
                 )
-                # 4. Decode: Ubah angka kembali menjadi teks
+                
+                # 4. Decode
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-                # 5. Jaring Pengaman: Potong paksa jika masih melebihi 150 karakter
+                
+                # 5. Logika pemotongan karakter yang sudah final dan teruji
                 target_length = 150
                 final_text = raw_summary
+
                 if len(final_text) > target_length:
-                   truncated_text = final_text[:target_length]
-                   # Cari spasi terakhir untuk pemotongan yang rapi
-                   last_space_index = truncated_text.rfind(' ')
-                   if last_space_index != -1:
-                        final_text = truncated_text[:last_space_index] + "."
-                   else:
-                        final_text = truncated_text + "."
-                      
-                st.session_state.summary_result = raw_summary
+                    truncated_text = final_text[:target_length]
+                    last_space_index = truncated_text.rfind(' ')
+                    
+                    if last_space_index != -1:
+                        final_text = truncated_text[:last_space_index] + "..."
+                    else:
+                        final_text = truncated_text + "..."
+
+                # 6. Simpan hasil ke state dan refresh
+                st.session_state.summary_result = final_text
                 st.rerun()
 
             except Exception as e:
