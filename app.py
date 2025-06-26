@@ -79,7 +79,7 @@ if submit_button and summarizer:
                 context_to_summarize = article_text[:2000]
                 
                 result = summarizer(
-                    prompt_text,
+                    context_to_summarize,
                     max_new_tokens=60,
                     min_new_tokens=25,
                     do_sample=False
