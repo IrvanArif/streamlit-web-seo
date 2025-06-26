@@ -1,40 +1,33 @@
 import streamlit as st
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-
-# --- KONFIGURASI HALAMAN ---
+#KONFIGURASI HALAMAN
 st.set_page_config(
     page_title="Peringkas Meta SEO",
     page_icon="🔎",
     layout="wide"
 )
-
-# --- FUNGSI UNTUK MEMUAT MODEL & TOKENIZER ANDA ---
+#MEMUAT MODEL & TOKENIZER
 @st.cache_resource
 def load_components():
     """
     Memuat tokenizer dan model 'Irvan14/t5-small-indonesian-summarization'
     secara manual untuk kontrol penuh.
     """
-    # Menggunakan model yang Anda tentukan
     repo_id = "Irvan14/t5-small-indonesian-summarization"
     try:
         print(f"--- Memuat Tokenizer dari Hub: {repo_id}... ---")
-        tokenizer = T5Tokenizer.from_pretrained(repo_id)
-        
+        tokenizer = T5Tokenizer.from_pretrained(repo_id)        
         print(f"--- Memuat Model dari Hub: {repo_id}... ---")
-        model = T5ForConditionalGeneration.from_pretrained(repo_id)
-        
+        model = T5ForConditionalGeneration.from_pretrained(repo_id)        
         print("--- Komponen berhasil dimuat. ---")
         return tokenizer, model
     except Exception as e:
         st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
         return None, None
-
-# --- MEMUAT KOMPONEN SAAT APLIKASI DIMULAI ---
+#MEMUAT KOMPONEN SAAT APLIKASI DIMULAI
 tokenizer, model = load_components()
-
-# --- INISIALISASI STATE UNTUK MENYIMPAN HASIL ---
+#INISIALISASI STATE UNTUK MENYIMPAN HASIL
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
 
@@ -83,8 +76,8 @@ if submit_button and tokenizer and model:
                 # 3. Generate dengan parameter yang terbukti menghasilkan ringkasan bagus
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=40,
-                    min_length=20,
+                    max_length=80,
+                    min_length=30,
                     num_beams=5,
                     repetition_penalty=2.5,
                     length_penalty=1.5,
