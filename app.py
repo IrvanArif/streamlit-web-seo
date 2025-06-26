@@ -80,7 +80,7 @@ if submit_button and summarizer:
                 input_text_with_prefix = "summarize: " + context_to_summarize
                 
                 result = summarizer(
-                    input_text_with_prefix
+                    input_text_with_prefix,
                     max_new_tokens=60,      # Batas maksimal token/kata
                     min_new_tokens=20,      # Batas minimal token/kata
                     do_sample=True,         # Mengaktifkan metode sampling, agar tidak kaku
