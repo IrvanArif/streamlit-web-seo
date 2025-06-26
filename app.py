@@ -1,28 +1,7 @@
 import streamlit as st
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-import re
-import nltk
-import os # Library baru untuk mengelola path direktori
-
-# --- BAGIAN SETUP NLTK BARU YANG LEBIH ANDAL ---
-# Tentukan path lokal untuk menyimpan data NLTK
-nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
-
-# Buat direktori jika belum ada
-if not os.path.exists(nltk_data_dir):
-    os.makedirs(nltk_data_dir)
-
-# Tambahkan path lokal kita ke daftar path yang dicari NLTK
-if nltk_data_dir not in nltk.data.path:
-    nltk.data.path.append(nltk_data_dir)
-
-# Coba cari 'punkt', jika tidak ada, unduh ke direktori lokal kita
-try:
-    nltk.data.find('tokenizers/punkt', paths=[nltk_data_dir])
-except LookupError:
-    print(f"Downloading 'punkt' to local directory: {nltk_data_dir}")
-    nltk.download('punkt', download_dir=nltk_data_dir)
+import re # Library Regular Expression, pengganti NLTK
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -100,13 +79,15 @@ if submit_button and tokenizer and model:
                 keywords = extract_keywords(article_title, article_text)
                 keyword_context = ""
                 if keywords:
-                    sentences = nltk.sent_tokenize(article_text)
+                    # MENGGANTI NLTK DENGAN REGEX UNTUK MEMECAH KALIMAT
+                    sentences = re.split(r'(?<=[.?!])\s+', article_text)
                     relevant_sentences = []
                     for sentence in sentences:
                         if any(keyword.lower() in sentence.lower() for keyword in keywords):
                             relevant_sentences.append(sentence)
                     if relevant_sentences:
                         keyword_context = " ".join(relevant_sentences)
+                
                 source_text_for_summary = keyword_context if keyword_context else article_text
                 input_text = "summarize: " + source_text_for_summary
                 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -117,6 +98,7 @@ if submit_button and tokenizer and model:
                     repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
                 )
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                
                 target_length = 150
                 final_text = raw_summary
                 if len(final_text) > target_length:
