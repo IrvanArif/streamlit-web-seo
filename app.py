@@ -22,7 +22,7 @@ def load_components():
         st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
         return None, None
 
-# --- FUNGSI EKSTRAKSI KATA KUNCI (TETAP DIGUNAKAN) ---
+# --- FUNGSI EKSTRAKSI KATA KUNCI ---
 def extract_keywords(title, text, num_keywords=4):
     stop_words = set([
         'di', 'dan', 'atau', 'yang', 'ini', 'itu', 'ke', 'dari', 'dengan', 'seorang',
@@ -30,12 +30,10 @@ def extract_keywords(title, text, num_keywords=4):
         'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa',
         'profil', 'lengkap', 'mantan', 'member', 'perjalanan', 'karier', 'kontroversi'
     ])
-
     def preprocess(s):
         s = s.lower()
         s = re.sub(r'[^\w\s]', '', s)
         return [word for word in s.split() if word not in stop_words and len(word) > 3]
-
     title_words = set(preprocess(title))
     body_words = preprocess(text)
     word_freq = {word: body_words.count(word) for word in title_words}
@@ -46,7 +44,13 @@ def extract_keywords(title, text, num_keywords=4):
 # --- MEMUAT KOMPONEN ---
 tokenizer, model = load_components()
 
-# --- INISIALISASI STATE ---
+# --- INISIALISASI STATE (DITAMBAH UNTUK INPUT) ---
+# Kunci agar input bisa di-reset
+if 'article_title' not in st.session_state:
+    st.session_state.article_title = ""
+if 'article_text' not in st.session_state:
+    st.session_state.article_text = ""
+# State untuk output
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
 
@@ -55,12 +59,20 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Masukkan Teks")
-    article_title = st.text_input("Judul Artikel", placeholder="Masukkan judul artikel Anda di sini...")
-    article_text = st.text_area("Isi Konten Artikel", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
-    submit_button = st.button("Buat Deskripsi Meta", type="primary")
+    # Menggunakan 'key' untuk menghubungkan widget dengan session_state
+    st.text_input("Judul Artikel", key="article_title", placeholder="Masukkan judul artikel Anda di sini...")
+    st.text_area("Isi Konten Artikel", key="article_text", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
+    
+    # Membuat 2 kolom untuk tombol Submit dan Reset
+    s_col, r_col = st.columns(2)
+    with s_col:
+        submit_button = st.button("Buat Deskripsi Meta", type="primary", use_container_width=True)
+    with r_col:
+        reset_button = st.button("Reset", use_container_width=True)
 
 with col2:
     st.subheader("Deskripsi Meta SEO")
+    # Membaca output dari session_state
     output_text_value = st.session_state.summary_result
     
     if output_text_value:
@@ -71,22 +83,33 @@ with col2:
     char_count = len(output_text_value)
     st.caption(f"{char_count}/150 karakter. Ideal: 130-150.")
 
-    # Bagian 'Saran Kata Kunci' telah dihapus dari sini
-
     st.subheader("Pratinjau SEO")
     with st.container(border=True):
-        st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
+        # Membaca judul dari session_state untuk pratinjau
+        st.markdown(f"<h5>{st.session_state.article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
         st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
 
-# --- LOGIKA UTAMA DENGAN INJEKSI KATA KUNCI ---
+# --- LOGIKA TOMBOL ---
+
+# LOGIKA TOMBOL RESET
+if reset_button:
+    st.session_state.article_title = ""
+    st.session_state.article_text = ""
+    st.session_state.summary_result = ""
+    st.rerun()
+
+# LOGIKA TOMBOL SUBMIT
 if submit_button and tokenizer and model:
-    if not article_text or len(article_text) < 150:
+    # Membaca input dari session_state
+    article_title_value = st.session_state.article_title
+    article_text_value = st.session_state.article_text
+
+    if not article_text_value or len(article_text_value) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
         with st.spinner("Membuat ringkasan dan menyisipkan kata kunci..."):
             try:
-                # --- Langkah 1: Buat ringkasan seperti biasa ---
-                input_text = "summarize: " + article_text
+                input_text = "summarize: " + article_text_value
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
                 model.to(device)
@@ -96,16 +119,13 @@ if submit_button and tokenizer and model:
                 )
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-                # --- Langkah 2: Ekstrak kata kunci ---
-                keywords = extract_keywords(article_title, article_text)
+                keywords = extract_keywords(article_title_value, article_text_value)
                 
-                # --- Langkah 3: Gabungkan (Inject) kata kunci ke awal ringkasan ---
                 processed_summary = raw_summary
                 if keywords:
                     keyword_prefix = ", ".join(keywords).capitalize()
                     processed_summary = f"{keyword_prefix}. {raw_summary}"
 
-                # --- Langkah 4: Potong hasil gabungan agar sesuai batas karakter ---
                 target_length = 150
                 final_text = processed_summary
                 if len(final_text) > target_length:
