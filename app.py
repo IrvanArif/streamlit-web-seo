@@ -90,18 +90,6 @@ if submit_button and tokenizer and model:
                     inputs['input_ids'], max_length=60, min_length=25, num_beams=5,
                     repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
                 )
-                raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-                
-                target_length = 150
-                final_text = raw_summary
-                if len(final_text) > target_length:
-                    truncated_text = final_text[:target_length]
-                    last_space_index = truncated_text.rfind(' ')
-                    if last_space_index != -1:
-                        final_text = truncated_text[:last_space_index] + "."
-                    else:
-                        final_text = truncated_text + "."
-                st.session_state.summary_result = final_text
-                st.rerun()
+              
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat proses peringkasan: {e}")
