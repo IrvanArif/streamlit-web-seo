@@ -90,6 +90,6 @@ if submit_button and tokenizer and model:
                     inputs['input_ids'], max_length=60, min_length=25, num_beams=5,
                     repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
                 )
-              
+              st.rerun()
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat proses peringkasan: {e}")
