@@ -2,12 +2,14 @@ import streamlit as st
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 import re
+
 #KONFIGURASI HALAMAN
 st.set_page_config(
     page_title="Peringkas Meta SEO",
     page_icon="🔎",
     layout="wide"
 )
+
 #MUAT MODEL & TOKENIZER
 @st.cache_resource
 def load_components():
@@ -19,6 +21,7 @@ def load_components():
     except Exception as e:
         st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
         return None, None
+
 #EKSTRAKSI KATA KUNCI
 def extract_keywords(title, text, num_keywords=4):
     stop_words = set([
@@ -31,37 +34,48 @@ def extract_keywords(title, text, num_keywords=4):
         s = s.lower()
         s = re.sub(r'[^\w\s]', '', s)
         return [word for word in s.split() if word not in stop_words and len(word) > 3]
+
     title_words = set(preprocess(title))
     body_words = preprocess(text)
     word_freq = {word: body_words.count(word) for word in title_words}
     sorted_keywords = sorted(word_freq.items(), key=lambda item: item[1], reverse=True)
     top_keywords = [keyword for keyword, freq in sorted_keywords if freq > 0][:num_keywords]
     return top_keywords
-#UAT KOMPONEN
+
+#MUAT KOMPONEN
 tokenizer, model = load_components()
+
 #INISIALISASI STATE
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
+
 #ANTARMUKA
 col1, col2 = st.columns(2)
+
 with col1:
     st.subheader("Masukkan Teks")
     article_title = st.text_input("Judul Artikel", placeholder="Masukkan judul artikel Anda di sini...")
     article_text = st.text_area("Isi Konten Artikel", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
     submit_button = st.button("Buat Deskripsi Meta", type="primary")
+
 with col2:
     st.subheader("Deskripsi Meta SEO")
     output_text_value = st.session_state.summary_result
+    
     if output_text_value:
         st.info(output_text_value)
     else:
         st.info("Deskripsi meta Anda akan muncul di sini...")
+    
     char_count = len(output_text_value)
-    st.caption(f"{char_count}/150 karakter. Ideal: 130-150.")
+    # --- PERUBAHAN 1: Mengubah caption untuk tidak menampilkan batas 150 ---
+    st.caption(f"Jumlah Karakter: {char_count}")
+
     st.subheader("Pratinjau SEO")
     with st.container(border=True):
         st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
         st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
+
 #LOGIKA
 if submit_button and tokenizer and model:
     if not article_text or len(article_text) < 150:
@@ -72,7 +86,6 @@ if submit_button and tokenizer and model:
                 keywords = extract_keywords(article_title, article_text)
                 keyword_context = ""
                 if keywords:
-                    #UNTUK MEMECAH KALIMAT
                     sentences = re.split(r'(?<=[.?!])\s+', article_text)
                     relevant_sentences = []
                     for sentence in sentences:
@@ -83,16 +96,28 @@ if submit_button and tokenizer and model:
                 
                 source_text_for_summary = keyword_context if keyword_context else article_text
                 input_text = "summarize: " + source_text_for_summary
+                
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
                 model.to(device)
+                
+                # --- PERUBAHAN 2: Menyesuaikan max_length untuk ringkasan yang lebih panjang ---
+                # Anda bisa mengubah nilai max_length di sini sesuai kebutuhan.
+                # Nilai sebelumnya adalah 60.
                 summary_ids = model.generate(
-                    inputs['input_ids'], max_length=60, min_length=25, num_beams=5,
+                    inputs['input_ids'], max_length=100, min_length=25, num_beams=5,
                     repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
                 )
+                
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-              
+                # --- PERUBAHAN 3: Menghapus seluruh blok logika pemotongan 150 karakter ---
+                # Logika pemotongan yang sebelumnya ada di sini telah dihapus.
+                # Hasil ringkasan dari model akan digunakan secara langsung.
+                final_text = raw_summary
+                
+                st.session_state.summary_result = final_text
                 st.rerun()
+
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat proses peringkasan: {e}")
