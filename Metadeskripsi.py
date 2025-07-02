@@ -101,19 +101,13 @@ if submit_button and tokenizer and model:
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
                 model.to(device)
                 
-                # --- PERUBAHAN 2: Menyesuaikan max_length untuk ringkasan yang lebih panjang ---
-                # Anda bisa mengubah nilai max_length di sini sesuai kebutuhan.
-                # Nilai sebelumnya adalah 60.
                 summary_ids = model.generate(
-                    inputs['input_ids'], max_length=100, min_length=25, num_beams=5,
+                    inputs['input_ids'], max_length=40, min_length=25, num_beams=5,
                     repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
                 )
                 
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-                # --- PERUBAHAN 3: Menghapus seluruh blok logika pemotongan 150 karakter ---
-                # Logika pemotongan yang sebelumnya ada di sini telah dihapus.
-                # Hasil ringkasan dari model akan digunakan secara langsung.
                 final_text = raw_summary
                 
                 st.session_state.summary_result = final_text
