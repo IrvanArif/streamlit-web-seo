@@ -7,24 +7,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# Konten Halaman
+# --- KONTEN HALAMAN ---
+
 st.title("Selamat Datang di Aplikasi Peringkas Meta SEO")
 st.markdown("---")
 
-st.header("Masalah: Inefisiensi Pembuatan Meta Deskripsi SEO")
+st.header("Otomatisasi Deskripsi Meta SEO dengan Kecerdasan Buatan")
 
 st.markdown("""
-Dalam optimasi mesin pencari (SEO), proses pembuatan meta deskripsi sering kali dilakukan secara manual. Pendekatan ini terbukti tidak efisien, memakan waktu, serta sulit untuk menjaga konsistensi kualitas, terutama untuk situs web dengan skala konten yang besar [17]. Akibatnya, banyak situs web memiliki meta deskripsi yang kurang relevan atau bahkan tidak ada sama sekali, yang dapat berdampak negatif pada visibilitas dan peringkat di halaman hasil mesin pencari (SERP) [17, 263]. Kualitas ringkasan yang subjektif juga belum tentu optimal untuk menarik perhatian pengguna di mesin pencari [262].
+Aplikasi ini adalah alat bantu yang dirancang untuk **mempercepat dan mempermudah proses pembuatan meta deskripsi SEO**. Dengan memanfaatkan model kecerdasan buatan (AI) **T5-small** yang telah di-*fine-tuning*, aplikasi ini mampu menganalisis artikel Anda dan menghasilkan draf ringkasan yang relevan dan efektif secara otomatis.
+
+Tujuannya adalah untuk membantu Anda menghemat waktu dan meningkatkan kualitas konten SEO tanpa perlu membuat deskripsi dari nol.
 """)
 
-st.header("Solusi: Otomatisasi dengan Kecerdasan Buatan (AI)")
-
+st.subheader("Untuk Siapa Aplikasi Ini?")
 st.markdown("""
-Aplikasi ini hadir untuk menjembatani celah tersebut dengan mengimplementasikan model **Transformer T5-small**, sebuah teknologi canggih dalam bidang *Natural Language Processing* (NLP) [265]. Model ini telah terbukti efektif untuk tugas peringkasan teks secara abstraktif, yaitu dengan menghasilkan kalimat baru yang koheren, bukan sekadar menyalin dari teks asli [8, 173].
-
-Dengan memanfaatkan model ini, proses pembuatan meta deskripsi dapat diotomatisasi. Tujuannya adalah untuk menyediakan solusi praktis yang dapat meningkatkan efisiensi kerja dan kualitas konten SEO bagi pengelola situs web, penulis konten, dan praktisi pemasaran digital [63, 267].
+Aplikasi ini sangat cocok untuk:
+- **Penulis Konten & Blogger**: Mempercepat alur kerja saat mempublikasikan artikel baru.
+- **Praktisi SEO & Digital Marketer**: Mengoptimalkan puluhan hingga ratusan halaman web dengan efisien.
+- **Pemilik Bisnis & Situs Web**: Meningkatkan visibilitas online dengan meta deskripsi yang lebih baik.
 """)
 
-st.info("""
-**Catatan:** Nomor sitasi seperti `[17]` merujuk pada daftar pustaka yang digunakan dalam penelitian yang mendasari aplikasi ini. Daftar referensi lengkap tersedia di halaman **Panduan & Praktik Terbaik**.
-""", icon="ℹ️")
+st.markdown("---")
+
+st.success("""
+### Siap Mencoba?
+
+- Klik halaman **Buat Meta Deskripsi SEO** di bilah sisi untuk mulai menggunakan alat ini.
+- Kunjungi halaman **Panduan**, **Metodologi**, dan **Hasil** untuk mempelajari lebih lanjut tentang praktik terbaik SEO dan detail teknis penelitian di balik aplikasi ini.
+""", icon="🚀")
