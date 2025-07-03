@@ -28,22 +28,17 @@ def smart_truncate(text, target_length=155):
     if len(text) <= target_length:
         return text
     
-    # Potong ke panjang target
     truncated_text = text[:target_length]
-    
-    # Cari titik terakhir pada teks yang sudah dipotong
     last_period_index = truncated_text.rfind('.')
     
-    # Jika ditemukan titik, potong setelah titik tersebut
     if last_period_index != -1:
         return truncated_text[:last_period_index + 1]
     else:
-        # Jika tidak ada titik, cari spasi terakhir
         last_space_index = truncated_text.rfind(' ')
         if last_space_index != -1:
             return truncated_text[:last_space_index] + "..."
         else:
-            return truncated_text # Fallback jika tidak ada spasi
+            return truncated_text
 
 # --- Memuat Komponen ---
 tokenizer, model = load_components()
@@ -84,9 +79,9 @@ if submit_button and tokenizer and model:
     if not article_text or len(article_text) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
-        with st.spinner("Membuat ringkasan..."):
+        with st.spinner("Membuat ringkasan dengan mode kreatif..."):
             try:
-                # --- PERBAIKAN: Menggunakan prompt yang lebih sederhana dan alami ---
+                # Menggunakan prompt yang sederhana dan alami
                 source_text_for_summary = f"{article_title}\n\n{article_text}"
                 input_text = "ringkas: " + source_text_for_summary
                 
@@ -94,20 +89,21 @@ if submit_button and tokenizer and model:
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True).to(device)
                 model.to(device)
 
-                # Biarkan model menghasilkan ringkasan yang sedikit lebih panjang untuk kualitas
+                # --- PERUBAHAN UTAMA: Menggunakan teknik Sampling ---
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=80,  # Beri ruang lebih untuk kualitas
+                    max_length=80,
                     min_length=25,
-                    num_beams=5,
-                    repetition_penalty=2.0,
-                    length_penalty=1.0,
-                    early_stopping=True
+                    do_sample=True,
+                    top_k=50,
+                    top_p=0.95,
+                    repetition_penalty=2.5,
+                    num_beams=1 # Matikan beam search agar sampling bisa bekerja
                 )
                 
                 raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-                # --- PERBAIKAN: Gunakan fungsi smart_truncate untuk memastikan panjangnya pas ---
+                # Gunakan fungsi smart_truncate untuk memastikan panjangnya pas
                 final_summary = smart_truncate(raw_summary)
                 
                 # Menyimpan hasil ke state dan memuat ulang tampilan
