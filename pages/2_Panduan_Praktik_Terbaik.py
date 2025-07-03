@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Mengatur Konfigurasi Halaman
+# Konfigurasi Halaman
 st.set_page_config(
     page_title="Panduan Meta Deskripsi SEO",
     page_icon="📖",
@@ -13,7 +13,7 @@ st.markdown("---")
 
 # Pengantar
 st.markdown("""
-Meta deskripsi adalah elemen HTML yang memberikan ringkasan singkat tentang isi suatu halaman web. Meskipun tidak secara langsung menjadi faktor peringkat utama bagi Google [1], meta deskripsi yang efektif sangat krusial untuk meningkatkan *Click-Through Rate* (CTR) dari halaman hasil pencarian [2]. Deskripsi yang menarik akan memancing pengguna untuk mengklik tautan Anda, bukan milik kompetitor.
+Meta deskripsi adalah tag HTML yang berisi deskripsi singkat mengenai topik sebuah halaman web [202]. Meskipun bukan satu-satunya faktor, meta deskripsi diidentifikasi sebagai salah satu faktor peringkat yang penting dalam literatur SEO [201]. Deskripsi ini merupakan elemen kedua setelah judul yang dilihat pengguna di hasil pencarian, sehingga menjadi cara terbaik untuk menarik perhatian pengunjung [202].
 """)
 
 # Praktik Terbaik
@@ -21,64 +21,47 @@ st.header("Praktik Terbaik (Best Practices)")
 
 with st.expander("1. Jaga Panjang Karakter Tetap Optimal"):
     st.markdown("""
-    - **Panjang ideal**: Usahakan panjang meta deskripsi antara **155-160 karakter**.
-    - **Risiko terpotong**: Jika lebih dari itu, Google kemungkinan besar akan memotongnya, sehingga pesan Anda tidak tersampaikan sepenuhnya.
-    - **Gunakan alat bantu**: Aplikasi ini sudah menyediakan penghitung karakter untuk memudahkan Anda.
+    Panjang optimal untuk teks meta deskripsi adalah sekitar **150 karakter**. Hal ini penting karena teks yang lebih panjang akan dipotong oleh mesin pencari, sehingga informasi atau pesan ajakan tidak tersampaikan sepenuhnya [203].
     """)
 
-with st.expander("2. Gunakan Kata Kunci Utama (Focus Keyword)"):
+with st.expander("2. Gunakan Kata Kunci yang Relevan"):
     st.markdown("""
-    - **Relevansi**: Pastikan kata kunci utama yang Anda targetkan ada di dalam meta deskripsi.
-    - **Penyorotan (Highlight)**: Google sering kali menebalkan kata kunci yang cocok dengan kueri pencarian pengguna, membuatnya lebih menonjol secara visual.
+    Meta deskripsi harus dirancang untuk mencerminkan konten halaman dan wajib mengandung kata kunci yang relevan [26]. Penempatan kata kunci pada 150 karakter pertama akan membantu mesin pencari dan pengguna untuk cepat memahami relevansi halaman Anda [25].
     """)
 
-with st.expander("3. Tulis Kalimat yang Aktif dan Mengundang Aksi (Call-to-Action)"):
+with st.expander("3. Sertakan Ajakan untuk Bertindak (Call-to-Action)"):
     st.markdown("""
-    - **Gunakan kalimat aktif**: Buat deskripsi yang jelas dan langsung ke pokok permasalahan.
-    - **Sertakan CTA**: Ajak pengguna untuk melakukan sesuatu. Contoh: "Pelajari lebih lanjut", "Temukan cara membuat", "Coba gratis sekarang."
+    Selain deskriptif, meta deskripsi yang baik harus menyertakan kalimat ajakan untuk bertindak (*call-to-action*). Ini akan mendorong pengguna untuk melakukan klik setelah membaca ringkasan Anda di hasil pencarian [203].
     """)
 
-with st.expander("4. Hindari Deskripsi Duplikat"):
+with st.expander("4. Pastikan Deskripsi Akurat dan Unik"):
     st.markdown("""
-    - **Keunikan itu penting**: Setiap halaman harus memiliki meta deskripsi yang unik, sama seperti tag judul (`title tag`).
-    - **Dampak negatif**: Menggunakan deskripsi yang sama di banyak halaman dapat membingungkan mesin pencari dan menurunkan kualitas pengalaman pengguna.
-    """)
-
-with st.expander("5. Deskripsikan Isi Konten Secara Akurat"):
-    st.markdown("""
-    - **Jangan menipu (clickbait)**: Pastikan deskripsi Anda secara akurat mencerminkan apa yang akan pengguna temukan di halaman tersebut.
-    - **Bounce rate**: Deskripsi yang tidak relevan dapat meningkatkan *bounce rate* (pengguna langsung kembali ke hasil pencarian), yang merupakan sinyal negatif bagi Google.
-    """)
-
-with st.expander("6. Anggap Deskripsi sebagai 'Iklan' untuk Halaman Anda"):
-    st.markdown("""
-    - **Tujuan utama**: Meta deskripsi adalah kesempatan Anda untuk "menjual" konten Anda kepada calon pengunjung di halaman hasil pencarian.
-    - **Tonjolkan nilai lebih**: Apa yang membuat konten Anda lebih baik dari yang lain? Sampaikan itu di sini.
+    Pastikan deskripsi secara akurat mewakili konten yang ada di halaman. Deskripsi yang menyesatkan dapat meningkatkan *bounce rate*. Setiap halaman di situs Anda harus memiliki meta deskripsi yang unik untuk menghindari kebingungan di mesin pencari dan memberikan pengalaman terbaik bagi pengguna.
     """)
 
 st.markdown("---")
 
-# Hal yang Perlu Dihindari
-st.header("Hal yang Perlu Dihindari")
-st.error(
-    """
-    - **Keyword Stuffing**: Jangan mengulang-ulang kata kunci secara tidak wajar. Ini terlihat seperti spam bagi pengguna dan mesin pencari.
-    - **Menggunakan Tanda Kutip Ganda**: Hindari penggunaan tanda kutip ganda ("...") dalam deskripsi. Google akan memotong teks pada tanda kutip tersebut.
-    - **Deskripsi Otomatis**: Deskripsi yang ditulis manual hampir selalu lebih efektif daripada yang dibuat otomatis oleh sistem.
-    """
-)
+st.header("Referensi")
+st.markdown("""
+Berikut adalah daftar pustaka yang relevan dari penelitian yang mendasari aplikasi ini, sesuai dengan nomor sitasi yang digunakan.
+""")
 
-st.markdown("---")
+st.text("""
+[8] U. Primakara, “IMPLEMENTASI PERINGKAS DOKUMEN BERBAHASA INDONESIA MENGGUNAKAN METODE TEXT TO TEXT TRANSFER TRANSFORMER (T5) I Nyoman Purnama 1) , Ni Nengah Widya Utami 2) Program Studi Sistem Informasi 1) , Sistem Informasi Akutansi 2).”
 
-# Referensi
-st.subheader("Referensi")
+[17] G. Matošević, “Text summarization techniques for meta description generation in process of search engine optimization,” in Advances in Intelligent Systems and Computing, Springer Verlag, 2019, pp. 165–173.
 
-st.markdown(
-    '[1] Google, "Google does not use the keywords meta tag in web ranking," *Google Search Central Blog*, 2009. [Online]. Available: https://developers.google.com/search/blog/2009/09/google-does-not-use-keywords-meta-tag',
-    unsafe_allow_html=True
-)
+[22] E. Woncharso, A. Muawwal, S. Informasi, and S. KHARISMA Makassar, “Penerapan Search Engine Optimization (SEO) untuk meningkatkan pengunjung pada website SCLEAN.” [Online]. Available: https://tech.kharisma.ac.id
 
-st.markdown(
-    '[2] A. M. T. Al-Saeed dan M. A. Wahdan, "The Impact of Meta Description on Click-Through Rate (CTR) in Search Engine Results Pages (SERPs)," *International Journal of Advanced Computer Science and Applications*, vol. 12, no. 5, hlm. 45-51, 2021.',
-    unsafe_allow_html=True
-)
+[25] P. Septiani dan H. Kurniawan, “Analisa Penggunaan Keyword Untuk Implementasi Search Engine Optimization (SEO),” Jurnal Teknologi Informasi, vol. XV, no. 3, pp. 83–91, Nov. 2020.
+
+[26] A. Zahra Maulaa Habiibah, A. Hermawan, and R. Gelar Guntara, “Implementasi Teknik Seo Dengan Metode On Page dan Off Page Dalam Meningkatkan Peringkat Website Canopybandung.Com”.
+
+[63] Merujuk pada bagian Tujuan Penelitian dalam dokumen skripsi Anda, di mana disebutkan bahwa model diharapkan meningkatkan efisiensi kerja.
+
+[173] Merujuk pada bagian Tinjauan Pustaka dalam skripsi Anda, yang menyatakan bahwa T5 adalah algoritma abstraktif.
+
+[201-203] Merujuk pada bagian Meta Deskripsi SEO dalam Tinjauan Pustaka skripsi Anda.
+
+[262-267] Merujuk pada bagian Identifikasi Masalah dalam skripsi Anda.
+""")
