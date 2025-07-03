@@ -86,35 +86,35 @@ if submit_button and tokenizer and model:
     else:
         with st.spinner("Menganalisis kata kunci dan membuat ringkasan alami..."):
             try:
-                # 1. Ekstraksi kata kunci dan kalimat relevan (Logika Anda sudah bagus)
+                # 1. Ekstrak kata kunci (logika Anda tetap digunakan karena sudah bagus)
                 keywords = extract_keywords(article_title, article_text)
-                keyword_context = ""
-                if keywords:
-                    sentences = re.split(r'(?<=[.?!])\s+', article_text)
-                    relevant_sentences = []
-                    for sentence in sentences:
-                        if any(keyword.lower() in sentence.lower() for keyword in keywords):
-                            relevant_sentences.append(sentence)
-                    if relevant_sentences:
-                        keyword_context = " ".join(relevant_sentences)
                 
-                source_text_for_summary = keyword_context if keyword_context else article_text
+                # --- PERUBAHAN LOGIKA UTAMA ADA DI SINI ---
+                # Alih-alih memfilter kalimat, kita gunakan keywords sebagai petunjuk/prompt
+                
+                if keywords:
+                    # Buat prompt dengan kata kunci sebagai panduan
+                    keyword_prompt = ", ".join(keywords)
+                    source_text_for_summary = f"topik: {keyword_prompt}\n\n{article_text}"
+                else:
+                    # Jika tidak ada kata kunci, gunakan artikel lengkap
+                    source_text_for_summary = article_text
 
-                # --- PERBAIKAN 1: Menggunakan prefix yang benar ---
+                # Gunakan prefix yang benar untuk model
                 input_text = "ringkas: " + source_text_for_summary
                 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True).to(device)
                 model.to(device)
 
-                # --- PERBAIKAN 2: Mengatur panjang lewat parameter model ---
+                # Parameter generate tetap sama sesuai keinginan Anda
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=27,          # Targetkan 45 token (sekitar 150-160 karakter)
-                    min_length=20,          # Minimal 20 token agar tidak terlalu pendek
+                    max_length=27,          # TIDAK DIUBAH, sesuai permintaan Anda
+                    min_length=20,
                     num_beams=5,
                     repetition_penalty=2.5,
-                    length_penalty=1.2,     # Sedikit mendorong model agar membuat kalimat lebih panjang
+                    length_penalty=1.2,
                     early_stopping=True,
                     no_repeat_ngram_size=2
                 )
