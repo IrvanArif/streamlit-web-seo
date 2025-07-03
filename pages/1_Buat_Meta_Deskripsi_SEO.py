@@ -1,95 +1,107 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-
-# --- KONFIGURASI HALAMAN ---
+import torch
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+import re
+#KONFIGURASI HALAMAN
 st.set_page_config(
-    page_title="Buat Meta Deskripsi",
-    page_icon="✍️",
+    page_title="Peringkas Meta SEO",
+    page_icon="🔎",
     layout="wide"
 )
-
-# --- FUNGSI UNTUK MEMUAT MODEL ---
+#MUAT MODEL & TOKENIZER
 @st.cache_resource
-def load_model():
-    """Memuat tokenizer dan model dari Hugging Face Hub."""
-    model_name = "Irvan14/t5-small-indonesian-summarization"
+def load_components():
+    repo_id = "Irvan14/t5-small-indonesian-summarization"
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        tokenizer = T5Tokenizer.from_pretrained(repo_id)
+        model = T5ForConditionalGeneration.from_pretrained(repo_id)
         return tokenizer, model
     except Exception as e:
-        st.error(f"Gagal memuat model. Error: {e}")
+        st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
         return None, None
-
-# Panggil fungsi untuk memuat model
-tokenizer, model = load_model()
-
-# --- FUNGSI LOGIKA UNTUK GENERASI TEKS ---
-def run_generation():
-    """Fungsi yang dijalankan saat tombol 'on_click' ditekan."""
-    judul = st.session_state.judul_artikel_input
-    konten = st.session_state.isi_konten_input
-    
-    if konten and judul:
-        with st.spinner("AI sedang membuat ringkasan..."):
-            input_text = f"Judul: {judul}\n\n{konten}"
-            prefixed_text = "ringkas: " + input_text
-            inputs = tokenizer(prefixed_text, return_tensors="pt", max_length=1024, truncation=True)
-
-            summary_ids = model.generate(
-                inputs.input_ids,
-                max_length=60,
-                min_length=15,
-                num_beams=5,
-                early_stopping=True
-            )
-            
-            output_text = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-            
-            # Simpan hasil ke session state
-            st.session_state.deskripsi_seo_output = output_text
-            st.session_state.judul_pratinjau_output = judul
+#EKSTRAKSI KATA KUNCI
+def extract_keywords(title, text, num_keywords=4):
+    stop_words = set([
+        'di', 'dan', 'atau', 'yang', 'ini', 'itu', 'ke', 'dari', 'dengan', 'seorang',
+        'adalah', 'ialah', 'merupakan', 'untuk', 'pada', 'sebagai', 'sebuah', 
+        'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa',
+        'profil', 'lengkap', 'mantan', 'member', 'perjalanan', 'karier', 'kontroversi'
+    ])
+    def preprocess(s):
+        s = s.lower()
+        s = re.sub(r'[^\w\s]', '', s)
+        return [word for word in s.split() if word not in stop_words and len(word) > 3]
+    title_words = set(preprocess(title))
+    body_words = preprocess(text)
+    word_freq = {word: body_words.count(word) for word in title_words}
+    sorted_keywords = sorted(word_freq.items(), key=lambda item: item[1], reverse=True)
+    top_keywords = [keyword for keyword, freq in sorted_keywords if freq > 0][:num_keywords]
+    return top_keywords
+#UAT KOMPONEN
+tokenizer, model = load_components()
+#INISIALISASI STATE
+if 'summary_result' not in st.session_state:
+    st.session_state.summary_result = ""
+#ANTARMUKA
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Masukkan Teks")
+    article_title = st.text_input("Judul Artikel", placeholder="Masukkan judul artikel Anda di sini...")
+    article_text = st.text_area("Isi Konten Artikel", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
+    submit_button = st.button("Buat Deskripsi Meta", type="primary")
+with col2:
+    st.subheader("Deskripsi Meta SEO")
+    output_text_value = st.session_state.summary_result
+    if output_text_value:
+        st.info(output_text_value)
     else:
-        st.warning("Judul dan Isi Konten tidak boleh kosong.", icon="⚠️")
-
-# Inisialisasi session_state jika belum ada
-if 'deskripsi_seo_output' not in st.session_state:
-    st.session_state.deskripsi_seo_output = "Deskripsi meta Anda akan muncul di sini..."
-if 'judul_pratinjau_output' not in st.session_state:
-    st.session_state.judul_pratinjau_output = "Contoh Judul Halaman"
-
-# --- TAMPILAN APLIKASI ---
-if model is not None:
-    st.title("✍️ Buat Meta Deskripsi SEO")
-    st.markdown("Masukkan judul dan isi konten artikel Anda di bawah ini untuk menghasilkan draf meta deskripsi secara otomatis.")
-
-    col1, col2 = st.columns([1, 1])
-
-    with col1:
-        st.subheader("Masukkan Teks")
-        st.text_input("Judul Artikel", placeholder="Tuliskan judul artikel Anda di sini...", key="judul_artikel_input")
-        st.text_area("Isi Konten", placeholder="Tempelkan isi konten artikel Anda di sini...", height=300, key="isi_konten_input")
-        
-        # Tombol memanggil fungsi 'run_generation' saat diklik
-        st.button("Buat Deskripsi Meta", type="primary", on_click=run_generation)
-
-    with col2:
-        st.subheader("Deskripsi Meta SEO")
-        deskripsi = st.session_state.deskripsi_seo_output
-        st.write(deskripsi)
-        st.caption(f"Jumlah Karakter: {len(deskripsi)}")
-
-        st.markdown("---")
-
-        st.subheader("Pratinjau SEO")
-        judul_pratinjau = st.session_state.judul_pratinjau_output
-        st.markdown(f"""
-        <div style="border: 1px solid #333; border-radius: 8px; padding: 15px; background-color: #262730;">
-            <h5 style="color: #8ab4f8; margin: 0; font-weight: normal;">{judul_pratinjau}</h5>
-            <p style="color: #bdc1c6; font-size: 14px; margin-top: 5px;">
-                {deskripsi if len(deskripsi) > 0 and deskripsi != 'Deskripsi meta Anda akan muncul di sini...' else 'Di sinilah deskripsi meta Anda akan muncul...'}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-else:
-    st.error("Model tidak berhasil dimuat. Aplikasi tidak dapat berjalan.")
+        st.info("Deskripsi meta Anda akan muncul di sini...")
+    char_count = len(output_text_value)
+    st.caption(f"{char_count}/150 karakter. Ideal: 130-150.")
+    st.subheader("Pratinjau SEO")
+    with st.container(border=True):
+        st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
+#LOGIKA
+if submit_button and tokenizer and model:
+    if not article_text or len(article_text) < 150:
+        st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
+    else:
+        with st.spinner("Menganalisis kata kunci dan membuat ringkasan alami..."):
+            try:
+                keywords = extract_keywords(article_title, article_text)
+                keyword_context = ""
+                if keywords:
+                    #UNTUK MEMECAH KALIMAT
+                    sentences = re.split(r'(?<=[.?!])\s+', article_text)
+                    relevant_sentences = []
+                    for sentence in sentences:
+                        if any(keyword.lower() in sentence.lower() for keyword in keywords):
+                            relevant_sentences.append(sentence)
+                    if relevant_sentences:
+                        keyword_context = " ".join(relevant_sentences)
+                
+                source_text_for_summary = keyword_context if keyword_context else article_text
+                input_text = "summarize: " + source_text_for_summary
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
+                model.to(device)
+                summary_ids = model.generate(
+                    inputs['input_ids'], max_length=60, min_length=25, num_beams=5,
+                    repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
+                )
+                raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                
+                target_length = 150
+                final_text = raw_summary
+                if len(final_text) > target_length:
+                    truncated_text = final_text[:target_length]
+                    last_space_index = truncated_text.rfind(' ')
+                    if last_space_index != -1:
+                        final_text = truncated_text[:last_space_index] + "."
+                    else:
+                        final_text = truncated_text + "."
+                st.session_state.summary_result = final_text
+                st.rerun()
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat proses peringkasan: {e}")
