@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- FUNGSI UNTUK MEMUAT MODEL (dengan cache agar tidak loading berulang) ---
+# --- FUNGSI UNTUK MEMUAT MODEL ---
 @st.cache_resource
 def load_model():
     """Memuat tokenizer dan model dari Hugging Face Hub."""
@@ -24,11 +24,11 @@ tokenizer, model = load_model()
 st.title("✍️ Buat Meta Deskripsi SEO")
 st.markdown("Masukkan judul dan isi konten artikel Anda di bawah ini untuk menghasilkan draf meta deskripsi secara otomatis.")
 
-# Inisialisasi session_state di awal untuk menyimpan hasil
+# Inisialisasi session_state untuk menyimpan hasil
 if 'deskripsi_seo' not in st.session_state:
     st.session_state.deskripsi_seo = "Deskripsi meta Anda akan muncul di sini..."
-if 'jumlah_karakter' not in st.session_state:
-    st.session_state.jumlah_karakter = 0
+if 'judul_pratinjau' not in st.session_state:
+    st.session_state.judul_pratinjau = "Contoh Judul Halaman"
 
 # --- STRUKTUR LAYOUT DENGAN 2 KOLOM ---
 col1, col2 = st.columns([1, 1])
@@ -41,52 +41,47 @@ with col1:
     
     buat_tombol = st.button("Buat Deskripsi Meta", type="primary")
 
-    # Logika proses hanya berjalan jika tombol ditekan
+# --- KOLOM 2: OUTPUT DAN PRATINJAU ---
+with col2:
+    st.subheader("Deskripsi Meta SEO")
+    
+    # Logika proses dipindahkan ke sini, hanya berjalan jika tombol ditekan
     if buat_tombol:
         if isi_konten and judul_artikel:
             with st.spinner("AI sedang membuat ringkasan..."):
                 input_text = f"Judul: {judul_artikel}\n\n{isi_konten}"
                 prefixed_text = "ringkas: " + input_text
-                inputs = tokenizer(prefixed_text, return_tensors="pt", max_length=512, truncation=True)
+                inputs = tokenizer(prefixed_text, return_tensors="pt", max_length=1024, truncation=True) # Perpanjang input maks
 
-                # --- PARAMETER GENERASI YANG DIPERBAIKI ---
+                # --- PARAMETER GENERASI YANG LEBIH STABIL ---
                 summary_ids = model.generate(
                     inputs.input_ids,
-                    max_length=40,          # DIUBAH: Mengurangi jumlah token agar karakter tidak lebih dari 160
-                    min_length=12,
-                    num_beams=4,
-                    repetition_penalty=2.5,
-                    length_penalty=1.0,
-                    early_stopping=True,
-                    no_repeat_ngram_size=2
+                    max_length=60,  # Target token (sekitar 150-180 karakter)
+                    min_length=15,
+                    num_beams=5,    # Nilai standar untuk beam search
+                    early_stopping=True
                 )
                 
                 output_text = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
                 
-                # Simpan hasil ke session state untuk ditampilkan di kolom 2
+                # Simpan hasil ke session state untuk ditampilkan
                 st.session_state.deskripsi_seo = output_text
-                st.session_state.jumlah_karakter = len(output_text)
-                
-                # Memaksa re-run agar tampilan di kolom kanan langsung update (best practice)
-                st.rerun() 
-                
+                st.session_state.judul_pratinjau = judul_artikel
         else:
             st.warning("Judul dan Isi Konten tidak boleh kosong.", icon="⚠️")
 
-# --- KOLOM 2: OUTPUT DAN PRATINJAU (Selalu ditampilkan) ---
-with col2:
-    st.subheader("Deskripsi Meta SEO")
+    # Tampilkan hasil dari session_state
     st.write(st.session_state.deskripsi_seo)
-    st.caption(f"Jumlah Karakter: {st.session_state.jumlah_karakter}")
+    st.caption(f"Jumlah Karakter: {len(st.session_state.deskripsi_seo)}")
 
     st.markdown("---")
 
     st.subheader("Pratinjau SEO")
     st.markdown(f"""
     <div style="border: 1px solid #333; border-radius: 8px; padding: 15px; background-color: #262730;">
-        <h5 style="color: #8ab4f8; margin: 0; font-weight: normal;">{judul_artikel if judul_artikel else 'Contoh Judul Halaman'}</h5>
+        <h5 style="color: #8ab4f8; margin: 0; font-weight: normal;">{st.session_state.judul_pratinjau}</h5>
         <p style="color: #bdc1c6; font-size: 14px; margin-top: 5px;">
-            {st.session_state.deskripsi_seo if st.session_state.jumlah_karakter > 0 else 'Di sinilah deskripsi meta Anda akan muncul...'}
+            {st.session_state.deskripsi_seo if len(st.session_state.deskripsi_seo) > 0 and st.session_state.deskripsi_seo != 'Deskripsi meta Anda akan muncul di sini...' else 'Di sinilah deskripsi meta Anda akan muncul...'}
         </p>
     </div>
     """, unsafe_allow_html=True)
