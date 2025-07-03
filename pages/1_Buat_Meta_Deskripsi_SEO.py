@@ -1,117 +1,96 @@
 import streamlit as st
-import torch
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-import re
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-#KONFIGURASI HALAMAN
+# --- KONFIGURASI HALAMAN ---
 st.set_page_config(
-    page_title="Peringkas Meta SEO",
-    page_icon="🔎",
+    page_title="Buat Meta Deskripsi",
+    page_icon="✍️",
     layout="wide"
 )
 
-#MUAT MODEL & TOKENIZER
+# --- FUNGSI UNTUK MEMUAT MODEL (dengan cache agar tidak loading berulang) ---
 @st.cache_resource
-def load_components():
-    repo_id = "Irvan14/t5-small-indonesian-summarization"
-    try:
-        tokenizer = T5Tokenizer.from_pretrained(repo_id)
-        model = T5ForConditionalGeneration.from_pretrained(repo_id)
-        return tokenizer, model
-    except Exception as e:
-        st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
-        return None, None
+def load_model():
+    """Memuat tokenizer dan model dari Hugging Face Hub."""
+    model_name = "Irvan14/t5-small-indonesian-summarization"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    return tokenizer, model
 
-#EKSTRAKSI KATA KUNCI
-def extract_keywords(title, text, num_keywords=4):
-    stop_words = set([
-        'di', 'dan', 'atau', 'yang', 'ini', 'itu', 'ke', 'dari', 'dengan', 'seorang',
-        'adalah', 'ialah', 'merupakan', 'untuk', 'pada', 'sebagai', 'sebuah', 
-        'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa',
-        'profil', 'lengkap', 'mantan', 'member', 'perjalanan', 'karier', 'kontroversi'
-    ])
-    def preprocess(s):
-        s = s.lower()
-        s = re.sub(r'[^\w\s]', '', s)
-        return [word for word in s.split() if word not in stop_words and len(word) > 3]
+# Panggil fungsi untuk memuat model
+tokenizer, model = load_model()
 
-    title_words = set(preprocess(title))
-    body_words = preprocess(text)
-    word_freq = {word: body_words.count(word) for word in title_words}
-    sorted_keywords = sorted(word_freq.items(), key=lambda item: item[1], reverse=True)
-    top_keywords = [keyword for keyword, freq in sorted_keywords if freq > 0][:num_keywords]
-    return top_keywords
+# --- TAMPILAN APLIKASI ---
 
-#MUAT KOMPONEN
-tokenizer, model = load_components()
+st.title("✍️ Buat Meta Deskripsi SEO")
+st.markdown("Masukkan judul dan isi konten artikel Anda di bawah ini untuk menghasilkan draf meta deskripsi secara otomatis.")
 
-#INISIALISASI STATE
-if 'summary_result' not in st.session_state:
-    st.session_state.summary_result = ""
-
-#ANTARMUKA
-col1, col2 = st.columns(2)
+# Layout kolom
+col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("Masukkan Teks")
-    article_title = st.text_input("Judul Artikel", placeholder="Masukkan judul artikel Anda di sini...")
-    article_text = st.text_area("Isi Konten Artikel", height=300, placeholder="Tempelkan isi konten artikel Anda di sini...")
-    submit_button = st.button("Buat Deskripsi Meta", type="primary")
+    judul_artikel = st.text_input("Judul Artikel", placeholder="Tuliskan judul artikel Anda di sini...")
+    isi_konten = st.text_area("Isi Konten", placeholder="Tempelkan isi konten artikel Anda di sini...", height=300)
+    
+    # Tombol untuk memicu proses
+    buat_tombol = st.button("Buat Deskripsi Meta", type="primary")
+
+# --- PROSES GENERASI ---
+
+# Inisialisasi state untuk menyimpan hasil
+if 'deskripsi_seo' not in st.session_state:
+    st.session_state.deskripsi_seo = "Deskripsi meta Anda akan muncul di sini..."
+if 'jumlah_karakter' not in st.session_state:
+    st.session_state.jumlah_karakter = 0
+
+if buat_tombol:
+    if isi_konten and judul_artikel:
+        with st.spinner("AI sedang membuat ringkasan..."):
+            # Gabungkan judul dan konten sebagai input
+            input_text = f"Judul: {judul_artikel}\n\n{isi_konten}"
+            
+            # Tambahkan prefix tugas sesuai fine-tuning
+            prefixed_text = "ringkas: " + input_text
+            
+            # Tokenisasi input
+            inputs = tokenizer(prefixed_text, return_tensors="pt", max_length=512, truncation=True)
+
+            # --- INI BAGIAN PENTING: GENERASI DENGAN PARAMETER OPTIMAL ---
+            summary_ids = model.generate(
+                inputs.input_ids,
+                max_length=50,          # Batasi panjang maksimal meta deskripsi (sekitar 150-160 karakter)
+                min_length=15,          # Batasi panjang minimal agar tidak terlalu pendek
+                num_beams=4,            # Menggunakan beam search
+                repetition_penalty=2.5, # Menghukum pengulangan
+                length_penalty=1.0,     # Netral terhadap panjang
+                early_stopping=True,    # Berhenti lebih awal jika sudah menemukan hasil baik
+                no_repeat_ngram_size=2  # Mencegah pengulangan frasa 2 kata
+            )
+            
+            # Decode hasil
+            output_text = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            
+            # Simpan hasil ke session state
+            st.session_state.deskripsi_seo = output_text
+            st.session_state.jumlah_karakter = len(output_text)
+    else:
+        st.warning("Judul dan Isi Konten tidak boleh kosong.", icon="⚠️")
 
 with col2:
     st.subheader("Deskripsi Meta SEO")
-    output_text_value = st.session_state.summary_result
-    
-    if output_text_value:
-        st.info(output_text_value)
-    else:
-        st.info("Deskripsi meta Anda akan muncul di sini...")
-    
-    char_count = len(output_text_value)
-    # --- PERUBAHAN 1: Mengubah caption untuk tidak menampilkan batas 150 ---
-    st.caption(f"Jumlah Karakter: {char_count}")
+    st.write(st.session_state.deskripsi_seo)
+    st.caption(f"Jumlah Karakter: {st.session_state.jumlah_karakter}")
+
+    st.markdown("---")
 
     st.subheader("Pratinjau SEO")
-    with st.container(border=True):
-        st.markdown(f"<h5>{article_title or 'Contoh Judul Halaman'}</h5>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color: #4B5563;'>{output_text_value or 'Di sinilah deskripsi meta Anda akan muncul...'}</p>", unsafe_allow_html=True)
-
-#LOGIKA
-if submit_button and tokenizer and model:
-    if not article_text or len(article_text) < 150:
-        st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
-    else:
-        with st.spinner("Menganalisis kata kunci dan membuat ringkasan alami..."):
-            try:
-                keywords = extract_keywords(article_title, article_text)
-                keyword_context = ""
-                if keywords:
-                    sentences = re.split(r'(?<=[.?!])\s+', article_text)
-                    relevant_sentences = []
-                    for sentence in sentences:
-                        if any(keyword.lower() in sentence.lower() for keyword in keywords):
-                            relevant_sentences.append(sentence)
-                    if relevant_sentences:
-                        keyword_context = " ".join(relevant_sentences)
-                
-                source_text_for_summary = keyword_context if keyword_context else article_text
-                input_text = "summarize: " + source_text_for_summary
-                
-                device = "cuda" if torch.cuda.is_available() else "cpu"
-                inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
-                model.to(device)
-                
-                summary_ids = model.generate(
-                    inputs['input_ids'], max_length=40, min_length=25, num_beams=5,
-                    repetition_penalty=2.5, length_penalty=1.5, early_stopping=True, no_repeat_ngram_size=2
-                )
-                
-                raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-                
-                final_text = raw_summary
-                
-                st.session_state.summary_result = final_text
-                st.rerun()
-
-            except Exception as e:
-                st.error(f"Terjadi kesalahan saat proses peringkasan: {e}")
+    # Tampilkan pratinjau seperti di hasil pencarian Google
+    st.markdown(f"""
+    <div style="border: 1px solid #333; border-radius: 8px; padding: 15px; background-color: #262730;">
+        <h5 style="color: #8ab4f8; margin: 0; font-weight: normal;">{judul_artikel if judul_artikel else 'Contoh Judul Halaman'}</h5>
+        <p style="color: #bdc1c6; font-size: 14px; margin-top: 5px;">
+            {st.session_state.deskripsi_seo if st.session_state.jumlah_karakter > 0 else 'Di sinilah deskripsi meta Anda akan muncul...'}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
