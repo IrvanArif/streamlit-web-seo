@@ -92,7 +92,7 @@ if submit_button and tokenizer and model:
                 # --- PERUBAHAN UTAMA: Menggunakan teknik Sampling ---
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=70,
+                    max_length=80,
                     min_length=30,
                     do_sample=True,
                     top_k=50,
