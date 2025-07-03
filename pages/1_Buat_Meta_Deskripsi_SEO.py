@@ -26,11 +26,12 @@ def load_components():
 # --- FUNGSI UNTUK EKSTRAKSI KATA KUNCI ---
 def extract_keywords(title, text, num_keywords=4):
     """Mengekstrak kata kunci dari judul yang juga sering muncul di teks."""
+    # --- PERBAIKAN 1: Hapus kata yang terlalu spesifik dari stop_words ---
     stop_words = set([
         'di', 'dan', 'atau', 'yang', 'ini', 'itu', 'ke', 'dari', 'dengan', 'seorang',
         'adalah', 'ialah', 'merupakan', 'untuk', 'pada', 'sebagai', 'sebuah', 
-        'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa',
-        'profil', 'lengkap', 'mantan', 'member', 'perjalanan', 'karier', 'kontroversi'
+        'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa'
+        # Kata seperti 'profil', 'karier', 'kontroversi' dihapus agar bisa menjadi kata kunci
     ])
     
     def preprocess(s):
@@ -48,7 +49,7 @@ def extract_keywords(title, text, num_keywords=4):
 # --- Memuat Komponen ---
 tokenizer, model = load_components()
 
-# --- Inisialisasi State untuk Menyimpan Hasil ---
+# --- Inisialisasi State ---
 if 'summary_result' not in st.session_state:
     st.session_state.summary_result = ""
 
@@ -84,36 +85,33 @@ if submit_button and tokenizer and model:
     if not article_text or len(article_text) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
-        with st.spinner("Menganalisis kata kunci dan membuat ringkasan alami..."):
+        with st.spinner("Menganalisis dan membuat ringkasan..."):
             try:
-                # 1. Ekstrak kata kunci (logika Anda tetap digunakan karena sudah bagus)
+                # 1. Ekstrak kata kunci
                 keywords = extract_keywords(article_title, article_text)
                 
-                # --- PERUBAHAN LOGIKA UTAMA ADA DI SINI ---
-                # Alih-alih memfilter kalimat, kita gunakan keywords sebagai petunjuk/prompt
-                
+                # --- PERBAIKAN 2: Membuat prompt yang lebih cerdas dan adaptif ---
+                prompt_parts = [f"judul: {article_title}"]
                 if keywords:
-                    # Buat prompt dengan kata kunci sebagai panduan
-                    keyword_prompt = ", ".join(keywords)
-                    source_text_for_summary = f"topik: {keyword_prompt}\n\n{article_text}"
-                else:
-                    # Jika tidak ada kata kunci, gunakan artikel lengkap
-                    source_text_for_summary = article_text
-
-                # Gunakan prefix yang benar untuk model
+                    prompt_parts.append(f"topik utama: {', '.join(keywords)}")
+                
+                prompt_context = ". ".join(prompt_parts)
+                source_text_for_summary = f"{prompt_context}\n\n{article_text}"
+                
+                # Gunakan prefix yang benar
                 input_text = "ringkas: " + source_text_for_summary
                 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True).to(device)
                 model.to(device)
 
-                # Parameter generate tetap sama sesuai keinginan Anda
+                # Generate summary
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=27,          # TIDAK DIUBAH, sesuai permintaan Anda
+                    max_length=45,
                     min_length=20,
                     num_beams=5,
-                    repetition_penalty=2.5,
+                    repetition_penalty=2.0, # Sedikit diturunkan agar lebih stabil
                     length_penalty=1.2,
                     early_stopping=True,
                     no_repeat_ngram_size=2
@@ -123,7 +121,7 @@ if submit_button and tokenizer and model:
                 
                 # Menyimpan hasil ke state dan memuat ulang tampilan
                 st.session_state.summary_result = final_summary
-                st.session_state.prev_title = article_title # Simpan judul untuk pratinjau
+                st.session_state.prev_title = article_title
                 st.rerun()
 
             except Exception as e:
