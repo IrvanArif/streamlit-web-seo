@@ -110,7 +110,7 @@ if submit_button and tokenizer and model:
                 # --- PERBAIKAN 2: Mengatur panjang lewat parameter model ---
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=30,          # Targetkan 45 token (sekitar 150-160 karakter)
+                    max_length=27,          # Targetkan 45 token (sekitar 150-160 karakter)
                     min_length=20,          # Minimal 20 token agar tidak terlalu pendek
                     num_beams=5,
                     repetition_penalty=2.5,
