@@ -38,10 +38,3 @@ with st.expander("4. Pastikan Deskripsi Akurat dan Unik"):
     st.markdown("""
     Pastikan deskripsi secara akurat mewakili konten yang ada di halaman. Deskripsi yang menyesatkan dapat meningkatkan *bounce rate*. Setiap halaman di situs Anda harus memiliki meta deskripsi yang unik untuk menghindari kebingungan di mesin pencari dan memberikan pengalaman terbaik bagi pengguna.
     """)
-
-st.markdown("---")
-
-st.header("Referensi")
-st.info("Informasi pada halaman ini disadur dari landasan teori dan tinjauan pustaka pada penelitian yang mendasari aplikasi ini.")
-
-# Baris terakhir yang menyebabkan error telah dihapus.
