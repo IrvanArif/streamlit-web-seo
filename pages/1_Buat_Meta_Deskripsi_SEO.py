@@ -36,7 +36,7 @@ def smart_truncate(text, target_length=155):
     else:
         last_space_index = truncated_text.rfind(' ')
         if last_space_index != -1:
-            return truncated_text[:last_space_index] + "..."
+            return truncated_text[:last_space_index] + "."
         else:
             return truncated_text
 
@@ -92,8 +92,8 @@ if submit_button and tokenizer and model:
                 # --- PERUBAHAN UTAMA: Menggunakan teknik Sampling ---
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=80,
-                    min_length=25,
+                    max_length=70,
+                    min_length=30,
                     do_sample=True,
                     top_k=50,
                     top_p=0.95,
