@@ -10,10 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- FUNGSI UNTUK MEMUAT MODEL & TOKENIZER ---
+# --- FUNGSI PEMBANTU & KOMPONEN UTAMA ---
 @st.cache_resource
 def load_components():
-    """Memuat komponen penting dari Hugging Face Hub."""
+    """Memuat model dan tokenizer dari Hugging Face Hub."""
     repo_id = "Irvan14/t5-small-indonesian-summarization"
     try:
         tokenizer = T5Tokenizer.from_pretrained(repo_id)
@@ -23,28 +23,27 @@ def load_components():
         st.error(f"Gagal memuat komponen dari Hub. Kesalahan: {e}")
         return None, None
 
-# --- FUNGSI UNTUK EKSTRAKSI KATA KUNCI ---
-def extract_keywords(title, text, num_keywords=4):
-    """Mengekstrak kata kunci dari judul yang juga sering muncul di teks."""
-    # --- PERBAIKAN 1: Hapus kata yang terlalu spesifik dari stop_words ---
-    stop_words = set([
-        'di', 'dan', 'atau', 'yang', 'ini', 'itu', 'ke', 'dari', 'dengan', 'seorang',
-        'adalah', 'ialah', 'merupakan', 'untuk', 'pada', 'sebagai', 'sebuah', 
-        'karena', 'namun', 'saat', 'setelah', 'sebelum', 'juga', 'tak', 'bisa'
-        # Kata seperti 'profil', 'karier', 'kontroversi' dihapus agar bisa menjadi kata kunci
-    ])
+def smart_truncate(text, target_length=155):
+    """Memotong teks secara cerdas di akhir kalimat terakhir sebelum target_length."""
+    if len(text) <= target_length:
+        return text
     
-    def preprocess(s):
-        s = s.lower()
-        s = re.sub(r'[^\w\s]', '', s)
-        return [word for word in s.split() if word not in stop_words and len(word) > 3]
-
-    title_words = set(preprocess(title))
-    body_words = preprocess(text)
-    word_freq = {word: body_words.count(word) for word in title_words}
-    sorted_keywords = sorted(word_freq.items(), key=lambda item: item[1], reverse=True)
-    top_keywords = [keyword for keyword, freq in sorted_keywords if freq > 0][:num_keywords]
-    return top_keywords
+    # Potong ke panjang target
+    truncated_text = text[:target_length]
+    
+    # Cari titik terakhir pada teks yang sudah dipotong
+    last_period_index = truncated_text.rfind('.')
+    
+    # Jika ditemukan titik, potong setelah titik tersebut
+    if last_period_index != -1:
+        return truncated_text[:last_period_index + 1]
+    else:
+        # Jika tidak ada titik, cari spasi terakhir
+        last_space_index = truncated_text.rfind(' ')
+        if last_space_index != -1:
+            return truncated_text[:last_space_index] + "..."
+        else:
+            return truncated_text # Fallback jika tidak ada spasi
 
 # --- Memuat Komponen ---
 tokenizer, model = load_components()
@@ -72,7 +71,7 @@ with col2:
         st.info("Deskripsi meta Anda akan muncul di sini...")
         
     char_count = len(output_text_value)
-    st.caption(f"{char_count}/150 karakter. Ideal: 130-150.")
+    st.caption(f"{char_count} karakter. Ideal: 130-155.")
     
     st.subheader("Pratinjau SEO")
     with st.container(border=True):
@@ -85,39 +84,31 @@ if submit_button and tokenizer and model:
     if not article_text or len(article_text) < 150:
         st.warning("Masukkan setidaknya 150 karakter artikel untuk hasil terbaik.")
     else:
-        with st.spinner("Menganalisis dan membuat ringkasan..."):
+        with st.spinner("Membuat ringkasan..."):
             try:
-                # 1. Ekstrak kata kunci
-                keywords = extract_keywords(article_title, article_text)
-                
-                # --- PERBAIKAN 2: Membuat prompt yang lebih cerdas dan adaptif ---
-                prompt_parts = [f"judul: {article_title}"]
-                if keywords:
-                    prompt_parts.append(f"topik utama: {', '.join(keywords)}")
-                
-                prompt_context = ". ".join(prompt_parts)
-                source_text_for_summary = f"{prompt_context}\n\n{article_text}"
-                
-                # Gunakan prefix yang benar
+                # --- PERBAIKAN: Menggunakan prompt yang lebih sederhana dan alami ---
+                source_text_for_summary = f"{article_title}\n\n{article_text}"
                 input_text = "ringkas: " + source_text_for_summary
                 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
                 inputs = tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True).to(device)
                 model.to(device)
 
-                # Generate summary
+                # Biarkan model menghasilkan ringkasan yang sedikit lebih panjang untuk kualitas
                 summary_ids = model.generate(
                     inputs['input_ids'],
-                    max_length=45,
-                    min_length=20,
+                    max_length=80,  # Beri ruang lebih untuk kualitas
+                    min_length=25,
                     num_beams=5,
-                    repetition_penalty=2.0, # Sedikit diturunkan agar lebih stabil
-                    length_penalty=1.2,
-                    early_stopping=True,
-                    no_repeat_ngram_size=2
+                    repetition_penalty=2.0,
+                    length_penalty=1.0,
+                    early_stopping=True
                 )
                 
-                final_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                raw_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                
+                # --- PERBAIKAN: Gunakan fungsi smart_truncate untuk memastikan panjangnya pas ---
+                final_summary = smart_truncate(raw_summary)
                 
                 # Menyimpan hasil ke state dan memuat ulang tampilan
                 st.session_state.summary_result = final_summary
