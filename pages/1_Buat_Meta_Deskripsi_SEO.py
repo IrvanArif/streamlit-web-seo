@@ -111,7 +111,7 @@ if submit_button and tokenizer and model:
                 summary_ids = model.generate(
                     inputs['input_ids'],
                     max_length=27,          # TIDAK DIUBAH, sesuai permintaan Anda
-                    min_length=25,
+                    min_length=20,
                     num_beams=5,
                     repetition_penalty=2.5,
                     length_penalty=1.2,
