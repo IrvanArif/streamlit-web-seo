@@ -13,7 +13,7 @@ st.markdown("---")
 
 # Pengantar
 st.markdown("""
-Meta deskripsi adalah tag HTML yang berisi deskripsi singkat mengenai topik sebuah halaman web [202]. Meskipun bukan satu-satunya faktor, meta deskripsi diidentifikasi sebagai salah satu faktor peringkat yang penting dalam literatur SEO [201]. Deskripsi ini merupakan elemen kedua setelah judul yang dilihat pengguna di hasil pencarian, sehingga menjadi cara terbaik untuk menarik perhatian pengunjung.
+Meta deskripsi adalah tag HTML yang berisi deskripsi singkat mengenai topik sebuah halaman web. Meskipun bukan satu-satunya faktor, meta deskripsi diidentifikasi sebagai salah satu faktor peringkat yang penting dalam literatur SEO. Deskripsi ini merupakan elemen kedua setelah judul yang dilihat pengguna di hasil pencarian, sehingga menjadi cara terbaik untuk menarik perhatian pengunjung.
 """)
 
 # Praktik Terbaik
@@ -42,4 +42,6 @@ with st.expander("4. Pastikan Deskripsi Akurat dan Unik"):
 st.markdown("---")
 
 st.header("Referensi")
-st.markdown("""
+st.info("Informasi pada halaman ini disadur dari landasan teori dan tinjauan pustaka pada penelitian yang mendasari aplikasi ini.")
+
+# Baris terakhir yang menyebabkan error telah dihapus.
