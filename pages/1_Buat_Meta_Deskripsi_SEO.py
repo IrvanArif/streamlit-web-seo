@@ -86,7 +86,7 @@ if submit_button and tokenizer and model:
                 input_text = "ringkas: " + source_text_for_summary
                 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
-                inputs = tokenizer(input_text, return_tensors="pt", max_length=1024, truncation=True).to(device)
+                inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).to(device)
                 model.to(device)
 
                 # --- PERUBAHAN UTAMA: Menggunakan teknik Sampling ---
